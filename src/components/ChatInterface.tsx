@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ModelSelector } from "./ModelSelector";
@@ -8,181 +8,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-
-interface Message {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-}
+import { useChatState } from "@/hooks/useChatState";
+import { useSettings } from "@/hooks/useSettings";
 
 export function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
-  const [isLoading, setIsLoading] = useState(false);
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
-  const [thinkingMode, setThinkingMode] = useState(false);
-  const [streamingMode, setStreamingMode] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-
-  // Load settings from localStorage
-  useEffect(() => {
-    const savedThinkingMode = localStorage.getItem('thinkingMode');
-    const savedStreamingMode = localStorage.getItem('streamingMode');
-    
-    if (savedThinkingMode !== null) {
-      setThinkingMode(JSON.parse(savedThinkingMode));
-    }
-    if (savedStreamingMode !== null) {
-      setStreamingMode(JSON.parse(savedStreamingMode));
-    }
-  }, []);
-
-  // Save settings to localStorage
-  useEffect(() => {
-    localStorage.setItem('thinkingMode', JSON.stringify(thinkingMode));
-  }, [thinkingMode]);
-
-  useEffect(() => {
-    localStorage.setItem('streamingMode', JSON.stringify(streamingMode));
-  }, [streamingMode]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const clearChat = () => {
-    setMessages([]);
-  };
-
-  const stopGeneration = () => {
-    if (abortController) {
-      abortController.abort();
-      setAbortController(null);
-      setIsLoading(false);
-    }
-  };
-
-  const sendMessage = async (content: string) => {
-    if (!selectedModel) {
-      toast({
-        title: "No Model Selected",
-        description: "Please select a model before sending a message.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      role: 'user',
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-
-    const controller = new AbortController();
-    setAbortController(controller);
-
-    try {
-      const response = await fetch(`${ollamaUrl}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [...messages, userMessage].map(msg => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-          stream: streamingMode,
-          ...(thinkingMode && { think: true }),
-        }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      if (streamingMode) {
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('Failed to get response reader');
-        }
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: '',
-          role: 'assistant',
-          timestamp: new Date(),
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-
-        let fullContent = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim());
-
-          for (const line of lines) {
-            try {
-              const data = JSON.parse(line);
-              if (data.message?.content) {
-                fullContent += data.message.content;
-                setMessages(prev => prev.map(msg => 
-                  msg.id === assistantMessage.id 
-                    ? { ...msg, content: fullContent }
-                    : msg
-                ));
-              }
-            } catch (e) {
-              // Skip invalid JSON lines
-            }
-          }
-        }
-      } else {
-        // Non-streaming mode - wait for complete response
-        const responseData = await response.json();
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: responseData.message?.content || responseData.response || '',
-          role: 'assistant',
-          timestamp: new Date(),
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('Request was aborted');
-      } else {
-        console.error('Error sending message:', error);
-        toast({
-          title: "Error",
-          description: "Failed to send message. Check your Ollama connection.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsLoading(false);
-      setAbortController(null);
-    }
-  };
+  
+  const { thinkingMode, setThinkingMode, streamingMode, setStreamingMode } = useSettings();
+  
+  const {
+    messages,
+    isLoading,
+    messagesEndRef,
+    clearChat,
+    stopGeneration,
+    sendMessage,
+  } = useChatState({
+    ollamaUrl,
+    selectedModel,
+    thinkingMode,
+    streamingMode,
+  });
 
   return (
     <div className="flex flex-col h-screen bg-gradient-bg">
