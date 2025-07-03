@@ -99,7 +99,7 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
           content: '',
           role: 'assistant',
           timestamp: new Date(),
-          thinking: '',
+          ...(thinkingMode && { thinking: '' }),
         };
 
         setMessages(prev => [...prev, assistantMessage]);
@@ -124,7 +124,7 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
                 hasUpdate = true;
               }
               
-              if (data.message?.thinking) {
+              if (thinkingMode && data.message?.thinking) {
                 fullThinking += data.message.thinking;
                 hasUpdate = true;
               }
@@ -135,7 +135,7 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
                     ? { 
                         ...msg, 
                         content: fullContent,
-                        thinking: thinkingMode ? fullThinking : undefined
+                        ...(thinkingMode && { thinking: fullThinking })
                       }
                     : msg
                 ));
@@ -153,7 +153,7 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
           content: responseData.message?.content || responseData.response || '',
           role: 'assistant',
           timestamp: new Date(),
-          thinking: thinkingMode ? responseData.message?.thinking : undefined,
+          ...(thinkingMode && responseData.message?.thinking && { thinking: responseData.message.thinking }),
         };
 
         setMessages(prev => [...prev, assistantMessage]);

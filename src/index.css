@@ -244,4 +244,26 @@
       transform: translateY(0);
     }
   }
+  
+  @keyframes thinking-shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  .thinking-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.1) 25%,
+      hsl(var(--primary) / 0.3) 50%,
+      hsl(var(--primary) / 0.1) 75%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: thinking-shimmer 2s ease-in-out infinite;
+  }
 }
