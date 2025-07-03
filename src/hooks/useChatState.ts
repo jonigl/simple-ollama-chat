@@ -6,6 +6,7 @@ interface Message {
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
+  thinking?: string;
 }
 
 interface UseChatStateProps {
@@ -98,11 +99,13 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
           content: '',
           role: 'assistant',
           timestamp: new Date(),
+          thinking: '',
         };
 
         setMessages(prev => [...prev, assistantMessage]);
 
         let fullContent = '';
+        let fullThinking = '';
 
         while (true) {
           const { done, value } = await reader.read();
@@ -114,11 +117,26 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
           for (const line of lines) {
             try {
               const data = JSON.parse(line);
+              let hasUpdate = false;
+              
               if (data.message?.content) {
                 fullContent += data.message.content;
+                hasUpdate = true;
+              }
+              
+              if (data.message?.thinking) {
+                fullThinking += data.message.thinking;
+                hasUpdate = true;
+              }
+              
+              if (hasUpdate) {
                 setMessages(prev => prev.map(msg => 
                   msg.id === assistantMessage.id 
-                    ? { ...msg, content: fullContent }
+                    ? { 
+                        ...msg, 
+                        content: fullContent,
+                        thinking: thinkingMode ? fullThinking : undefined
+                      }
                     : msg
                 ));
               }
@@ -135,6 +153,7 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
           content: responseData.message?.content || responseData.response || '',
           role: 'assistant',
           timestamp: new Date(),
+          thinking: thinkingMode ? responseData.message?.thinking : undefined,
         };
 
         setMessages(prev => [...prev, assistantMessage]);
