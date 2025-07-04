@@ -19,32 +19,37 @@ export function ChatMessage({ message, isThinkingActive = false }: ChatMessagePr
   const isUser = message.role === 'user';
   const [showThinking, setShowThinking] = useState(false);
   const hasThinking = message.thinking && message.thinking.length > 0;
-  
+
   // Auto-open when thinking is active, auto-collapse when done
   useEffect(() => {
     if (isThinkingActive && hasThinking) {
       setShowThinking(true);
-    } else if (!isThinkingActive && hasThinking && showThinking) {
+    }
+  }, [isThinkingActive, hasThinking]);
+
+  // Separate effect to handle auto-collapse when thinking is complete
+  useEffect(() => {
+    if (!isThinkingActive && hasThinking && showThinking) {
       // Add a small delay before collapsing to let user see the final thinking
       const timer = setTimeout(() => setShowThinking(false), 1000);
       return () => clearTimeout(timer);
     }
-  }, [isThinkingActive, hasThinking, showThinking]);
-  
+  }, [isThinkingActive]);
+
   return (
-    <div 
+    <div
       className={cn(
         "flex gap-3 p-4 animate-slide-up",
         isUser ? "justify-end" : "justify-start"
       )}
     >
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-ai flex items-center justify-center shadow-card">
-          <Bot className="w-4 h-4 text-accent" />
+        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-ai flex items-center justify-center shadow-card">
+          <Bot className="w-6 h-6 text-accent" />
         </div>
       )}
-      
-      <div 
+
+      <div
         className={cn(
           "max-w-[80%] space-y-2",
           isUser ? "ml-12" : "mr-12"
@@ -57,13 +62,13 @@ export function ChatMessage({ message, isThinkingActive = false }: ChatMessagePr
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="h-6 px-2 text-xs text-muted-foreground transition-colors"
               >
-                <Brain className="w-3 h-3 mr-1" />
+                <Brain className="w-4 h-4" />
                 {showThinking ? 'Hide' : 'Show'} thinking process
               </Button>
             </CollapsibleTrigger>
-            
+
             <CollapsibleContent className="space-y-2">
               <div className={cn(
                 "bg-muted/30 border border-border/30 rounded-lg px-3 py-2",
@@ -85,13 +90,13 @@ export function ChatMessage({ message, isThinkingActive = false }: ChatMessagePr
             </CollapsibleContent>
           </Collapsible>
         )}
-        
+
         {/* Main Message */}
-        <div 
+        <div
           className={cn(
             "rounded-lg px-4 py-3 shadow-card",
-            isUser 
-              ? "bg-gradient-user text-user-message-foreground" 
+            isUser
+              ? "bg-gradient-user text-user-message-foreground"
               : "bg-gradient-ai text-ai-message-foreground"
           )}
         >
@@ -101,10 +106,10 @@ export function ChatMessage({ message, isThinkingActive = false }: ChatMessagePr
           </span>
         </div>
       </div>
-      
+
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-user flex items-center justify-center shadow-glow">
-          <User className="w-4 h-4 text-user-message-foreground" />
+        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-user flex items-center justify-center shadow-glow">
+          <User className="w-5 h-5 text-user-message-foreground" />
         </div>
       )}
     </div>

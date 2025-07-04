@@ -79,7 +79,7 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
             content: msg.content,
           })),
           stream: streamingMode,
-          ...(thinkingMode && { think: true }),
+          think: thinkingMode,
         }),
         signal: controller.signal,
       });
@@ -118,22 +118,22 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
             try {
               const data = JSON.parse(line);
               let hasUpdate = false;
-              
+
               if (data.message?.content) {
                 fullContent += data.message.content;
                 hasUpdate = true;
               }
-              
+
               if (thinkingMode && data.message?.thinking) {
                 fullThinking += data.message.thinking;
                 hasUpdate = true;
               }
-              
+
               if (hasUpdate) {
-                setMessages(prev => prev.map(msg => 
-                  msg.id === assistantMessage.id 
-                    ? { 
-                        ...msg, 
+                setMessages(prev => prev.map(msg =>
+                  msg.id === assistantMessage.id
+                    ? {
+                        ...msg,
                         content: fullContent,
                         ...(thinkingMode && { thinking: fullThinking })
                       }

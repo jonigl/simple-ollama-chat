@@ -48,29 +48,29 @@ export function ChatInput({ onSendMessage, isLoading, onStop, disabled }: ChatIn
             rows={1}
           />
         </div>
-        
+
         {isLoading ? (
           <Button
             type="button"
             onClick={onStop}
             variant="destructive"
             size="icon"
-            className="h-[60px] w-[60px] rounded-xl shadow-card"
+            className="h-[60px] w-[60px] rounded-xl shadow-card [&_svg]:!size-6"
           >
-            <Square className="w-5 h-5" />
+            <Square className="w-6 h-6" />
           </Button>
         ) : (
           <Button
             type="submit"
             disabled={!message.trim() || disabled}
             className={cn(
-              "h-[60px] w-[60px] rounded-xl shadow-card",
+              "h-[60px] w-[60px] rounded-xl shadow-card [&_svg]:!size-6",
               "bg-gradient-primary hover:shadow-glow",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               "transition-all duration-200"
             )}
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-6 h-6" />
           </Button>
         )}
       </div>

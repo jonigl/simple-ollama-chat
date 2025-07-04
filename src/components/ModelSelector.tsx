@@ -39,11 +39,6 @@ export function ModelSelector({ selectedModel, onModelChange, ollamaUrl }: Model
       }
       const data = await response.json();
       setModels(data.models || []);
-      
-      // If no model is selected and we have models, select the first one
-      if (!selectedModel && data.models?.length > 0) {
-        onModelChange(data.models[0].name);
-      }
     } catch (error) {
       console.error('Error fetching models:', error);
       toast({
@@ -67,8 +62,8 @@ export function ModelSelector({ selectedModel, onModelChange, ollamaUrl }: Model
 
   return (
     <div className="flex items-center gap-3 p-4 border-b border-border/50 bg-card/30 backdrop-blur-sm">
-      <Settings className="w-5 h-5 text-muted-foreground" />
-      
+      {/* <Settings className="w-5 h-5 text-muted-foreground" />Model Selection */}
+
       <div className="flex-1">
         <Select value={selectedModel} onValueChange={onModelChange} disabled={isLoading}>
           <SelectTrigger className={cn(
@@ -82,7 +77,7 @@ export function ModelSelector({ selectedModel, onModelChange, ollamaUrl }: Model
               <SelectItem key={model.name} value={model.name} className="text-foreground">
                 <div className="flex items-center justify-between w-full">
                   <span className="font-medium">{model.name}</span>
-                  <span className="text-xs text-muted-foreground ml-4">
+                  <span className="text-xs ml-4">
                     {formatModelSize(model.size)}
                   </span>
                 </div>
@@ -91,7 +86,7 @@ export function ModelSelector({ selectedModel, onModelChange, ollamaUrl }: Model
           </SelectContent>
         </Select>
       </div>
-      
+
       <Button
         variant="outline"
         size="icon"
