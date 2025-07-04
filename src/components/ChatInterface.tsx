@@ -104,9 +104,22 @@ export function ChatInterface() {
           </div>
         ) : (
           <div className="max-w-4xl mx-auto">
-            {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
-            ))}
+            {messages.map((message, index) => {
+              // Check if this is the last message and thinking is currently active
+              const isLastMessage = index === messages.length - 1;
+              const isThinkingActive = isLastMessage && 
+                                     message.role === 'assistant' && 
+                                     thinkingMode && 
+                                     isLoading;
+              
+              return (
+                <ChatMessage 
+                  key={message.id} 
+                  message={message} 
+                  isThinkingActive={isThinkingActive}
+                />
+              );
+            })}
             {isLoading && (
               <div className="flex justify-start p-4">
                 <div className="flex items-center gap-3">

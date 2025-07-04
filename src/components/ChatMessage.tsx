@@ -1,7 +1,8 @@
 import { cn } from "@/lib/utils";
 import { Bot, User, Brain } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ChatMessageProps {
   message: {
@@ -11,12 +12,24 @@ interface ChatMessageProps {
     timestamp: Date;
     thinking?: string;
   };
+  isThinkingActive?: boolean;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, isThinkingActive = false }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [showThinking, setShowThinking] = useState(false);
   const hasThinking = message.thinking && message.thinking.length > 0;
+  
+  // Auto-open when thinking is active, auto-collapse when done
+  useEffect(() => {
+    if (isThinkingActive && hasThinking) {
+      setShowThinking(true);
+    } else if (!isThinkingActive && hasThinking && showThinking) {
+      // Add a small delay before collapsing to let user see the final thinking
+      const timer = setTimeout(() => setShowThinking(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isThinkingActive, hasThinking, showThinking]);
   
   return (
     <div 
@@ -39,29 +52,38 @@ export function ChatMessage({ message }: ChatMessageProps) {
       >
         {/* Thinking Process */}
         {hasThinking && !isUser && (
-          <div className="space-y-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowThinking(!showThinking)}
-              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Brain className="w-3 h-3 mr-1" />
-              {showThinking ? 'Hide' : 'Show'} thinking process
-            </Button>
+          <Collapsible open={showThinking} onOpenChange={setShowThinking}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Brain className="w-3 h-3 mr-1" />
+                {showThinking ? 'Hide' : 'Show'} thinking process
+              </Button>
+            </CollapsibleTrigger>
             
-            {showThinking && (
-              <div className="bg-muted/30 border border-border/30 rounded-lg px-3 py-2 animate-fade-in thinking-shimmer">
+            <CollapsibleContent className="space-y-2">
+              <div className={cn(
+                "bg-muted/30 border border-border/30 rounded-lg px-3 py-2",
+                isThinkingActive ? "thinking-shimmer" : ""
+              )}>
                 <div className="flex items-center gap-2 mb-2">
-                  <Brain className="w-3 h-3 text-muted-foreground animate-pulse" />
-                  <span className="text-xs text-muted-foreground font-medium">Thinking...</span>
+                  <Brain className={cn(
+                    "w-3 h-3 text-muted-foreground",
+                    isThinkingActive ? "animate-pulse" : ""
+                  )} />
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {isThinkingActive ? "Thinking..." : "Thought process"}
+                  </span>
                 </div>
-                <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap animate-typing">
+                <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
                   {message.thinking}
                 </p>
               </div>
-            )}
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
         
         {/* Main Message */}
