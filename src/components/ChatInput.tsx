@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Square } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Send, Square, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
@@ -9,9 +10,30 @@ interface ChatInputProps {
   isLoading: boolean;
   onStop?: () => void;
   disabled?: boolean;
+  thinkingMode: boolean;
+  onThinkingModeChange: (enabled: boolean) => void;
+  selectedModel: string;
+  onModelChange: (model: string) => void;
+  models: Array<{ name: string; size: number }>;
+  isLoadingModels: boolean;
 }
 
-export function ChatInput({ onSendMessage, isLoading, onStop, disabled }: ChatInputProps) {
+export function ChatInput({
+  onSendMessage,
+  isLoading,
+  onStop,
+  disabled,
+  thinkingMode,
+  onThinkingModeChange,
+  selectedModel,
+  onModelChange,
+  models,
+  isLoadingModels
+}: ChatInputProps) {
+  const formatModelSize = (bytes: number) => {
+    const gb = bytes / (1024 * 1024 * 1024);
+    return `${gb.toFixed(1)}GB`;
+  };
   const [message, setMessage] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,48 +53,87 @@ export function ChatInput({ onSendMessage, isLoading, onStop, disabled }: ChatIn
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t border-border/50 bg-card/50 backdrop-blur-sm">
-      <div className="flex gap-3 items-end max-w-4xl mx-auto">
-        <div className="flex-1 relative">
-          <Textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            disabled={disabled}
-            className={cn(
-              "min-h-[60px] max-h-[120px] resize-none rounded-xl",
-              "bg-input/50 border-border/50 text-foreground placeholder:text-muted-foreground",
-              "focus:border-primary/50 focus:ring-1 focus:ring-primary/20",
-              "transition-all duration-200"
-            )}
-            rows={1}
-          />
+      <div className="max-w-4xl mx-auto space-y-2">
+        <div className="flex gap-3 items-end">
+          <div className="flex-1">
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message..."
+              disabled={disabled}
+              className={cn(
+                "min-h-[60px] max-h-[120px] resize-none rounded-xl",
+                "bg-input/50 border-border/50 text-foreground placeholder:text-muted-foreground",
+                "focus:border-primary/50 focus:ring-1 focus:ring-primary/20",
+                "transition-all duration-200"
+              )}
+              rows={1}
+            />
+          </div>
+
+          {isLoading ? (
+            <Button
+              type="button"
+              onClick={onStop}
+              variant="destructive"
+              size="icon"
+              className="h-[60px] w-[60px] rounded-xl shadow-card [&_svg]:!size-6"
+            >
+              <Square className="w-6 h-6" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              disabled={!message.trim() || disabled}
+              className={cn(
+                "h-[60px] w-[60px] rounded-xl shadow-card [&_svg]:!size-6",
+                "bg-gradient-primary hover:shadow-glow",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "transition-all duration-200"
+              )}
+            >
+              <Send className="w-6 h-6" />
+            </Button>
+          )}
         </div>
 
-        {isLoading ? (
+        <div className="flex gap-2 items-center">
+          <Select value={selectedModel} onValueChange={onModelChange} disabled={isLoadingModels}>
+            <SelectTrigger className={cn(
+              "h-8 w-48 rounded-lg text-sm bg-input/50 border-border/50",
+              "focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+            )}>
+              <SelectValue placeholder="Select model..." />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border/50">
+              {models.map((model) => (
+                <SelectItem key={model.name} value={model.name} className="text-foreground">
+                  <div className="flex items-center justify-between w-full">
+                    <span className="font-medium">{model.name}</span>
+                    <span className="text-xs text-muted-foreground ml-4">
+                      {formatModelSize(model.size)}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button
             type="button"
-            onClick={onStop}
-            variant="destructive"
-            size="icon"
-            className="h-[60px] w-[60px] rounded-xl shadow-card [&_svg]:!size-6"
-          >
-            <Square className="w-6 h-6" />
-          </Button>
-        ) : (
-          <Button
-            type="submit"
-            disabled={!message.trim() || disabled}
+            variant="outline"
+            size="sm"
+            onClick={() => onThinkingModeChange(!thinkingMode)}
             className={cn(
-              "h-[60px] w-[60px] rounded-xl shadow-card [&_svg]:!size-6",
-              "bg-gradient-primary hover:shadow-glow",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              "transition-all duration-200"
+              "h-8 px-3 rounded-lg text-muted-foreground hover:bg-transparent hover:border-primary hover:text-primary",
+              thinkingMode && "bg-primary/10 border-primary/50 text-primary"
             )}
           >
-            <Send className="w-6 h-6" />
+            <Brain className="w-3.5 h-3.5 mr-1.5" />
+            Thinking
           </Button>
-        )}
+        </div>
       </div>
     </form>
   );
