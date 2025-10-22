@@ -1,32 +1,52 @@
+import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Zap, Sun, Moon, Settings } from "lucide-react";
+import { Zap, Sun, Moon, Settings, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SettingsPanelProps {
   streamingMode: boolean;
   onStreamingModeChange: (enabled: boolean) => void;
+  onClearHistory?: () => void;
 }
 
 export function SettingsPanel({
   streamingMode,
   onStreamingModeChange,
+  onClearHistory,
 }: SettingsPanelProps) {
   const { theme, setTheme } = useTheme();
+  const [showClearDialog, setShowClearDialog] = useState(false);
+
+  const handleClearHistory = () => {
+    onClearHistory?.();
+    setShowClearDialog(false);
+  };
 
   return (
-    <Popover>
+    <>
+      <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           size="icon"
-          className="border-border/50 bg-input/50 hover:bg-accent/50"
+          className="border-border/50 hover:bg-transparent hover:border-primary hover:text-primary transition-colors"
         >
           <Settings className="w-4 h-4" />
         </Button>
@@ -81,9 +101,47 @@ export function SettingsPanel({
                 onCheckedChange={onStreamingModeChange}
               />
             </div>
+
+            {/* Clear History Button */}
+            {onClearHistory && (
+              <div className="pt-4 border-t border-border/50">
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setShowClearDialog(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All Chat History
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </PopoverContent>
     </Popover>
+
+    {/* Clear History Confirmation Dialog */}
+    <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Clear All Chat History</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete all chat sessions? This action
+            cannot be undone and all your chat history will be permanently
+            removed from local storage.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleClearHistory}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            Clear All
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

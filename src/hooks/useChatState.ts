@@ -1,27 +1,48 @@
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Message {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-  thinking?: string;
-}
+import type { Message, ChatSession } from "@/lib/chatHistory";
+import {
+  saveSession,
+  generateSessionTitle,
+} from "@/lib/chatHistory";
 
 interface UseChatStateProps {
   ollamaUrl: string;
   selectedModel: string;
   thinkingMode: boolean;
   streamingMode: boolean;
+  currentSession: ChatSession | null;
+  onSessionUpdate: (session: ChatSession) => void;
 }
 
-export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streamingMode }: UseChatStateProps) {
+export function useChatState({
+  ollamaUrl,
+  selectedModel,
+  thinkingMode,
+  streamingMode,
+  currentSession,
+  onSessionUpdate,
+}: UseChatStateProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isLoadingSession = useRef(false);
   const { toast } = useToast();
+
+  // Load messages when session changes
+  useEffect(() => {
+    isLoadingSession.current = true;
+    if (currentSession) {
+      setMessages(currentSession.messages);
+    } else {
+      setMessages([]);
+    }
+    // Reset the flag after a short delay to allow React to finish rendering
+    setTimeout(() => {
+      isLoadingSession.current = false;
+    }, 0);
+  }, [currentSession?.id]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -31,8 +52,43 @@ export function useChatState({ ollamaUrl, selectedModel, thinkingMode, streaming
     scrollToBottom();
   }, [messages]);
 
+  // Save session whenever messages change (but not on initial load)
+  useEffect(() => {
+    // Don't save if we're currently loading a session
+    if (isLoadingSession.current) return;
+
+    if (!currentSession) return;
+
+    // Only save if we have messages
+    if (messages.length > 0) {
+      const updatedSession: ChatSession = {
+        ...currentSession,
+        messages,
+        updatedAt: new Date(),
+        model: selectedModel,
+      };
+
+      // Auto-generate title from first message if still "New Chat"
+      if (updatedSession.title === "New Chat" && messages.length > 0) {
+        updatedSession.title = generateSessionTitle(messages);
+      }
+
+      saveSession(updatedSession);
+      onSessionUpdate(updatedSession);
+    }
+  }, [messages, currentSession, selectedModel]);
+
   const clearChat = () => {
     setMessages([]);
+    if (currentSession) {
+      const updatedSession: ChatSession = {
+        ...currentSession,
+        messages: [],
+        updatedAt: new Date(),
+      };
+      saveSession(updatedSession);
+      onSessionUpdate(updatedSession);
+    }
   };
 
   const stopGeneration = () => {

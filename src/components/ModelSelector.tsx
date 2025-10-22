@@ -67,14 +67,19 @@ export function ModelSelector({ selectedModel, onModelChange, ollamaUrl }: Model
       <div className="flex-1">
         <Select value={selectedModel} onValueChange={onModelChange} disabled={isLoading}>
           <SelectTrigger className={cn(
-            "bg-input/50 border-border/50 text-foreground",
-            "focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+            "border-border/50",
+            "hover:bg-transparent hover:border-foreground hover:text-foreground",
+            "focus:border-foreground focus:ring-1 focus:ring-foreground/20",
+            "transition-all duration-200"
           )}>
             <SelectValue placeholder="Select a model..." />
           </SelectTrigger>
-          <SelectContent className="bg-popover border-border/50">
+          <SelectContent className="border-border/50">
             {models.map((model) => (
-              <SelectItem key={model.name} value={model.name} className="text-foreground">
+              <SelectItem
+                key={model.name}
+                value={model.name}
+              >
                 <div className="flex items-center justify-between w-full">
                   <span className="font-medium">{model.name}</span>
                   <span className="text-xs ml-4">
@@ -93,7 +98,7 @@ export function ModelSelector({ selectedModel, onModelChange, ollamaUrl }: Model
         onClick={fetchModels}
         disabled={isLoading}
         className={cn(
-          "border-border/50 bg-input/50 hover:bg-input/70",
+          "border-border/50 hover:bg-transparent hover:border-primary hover:text-primary transition-colors",
           isLoading && "animate-spin"
         )}
       >

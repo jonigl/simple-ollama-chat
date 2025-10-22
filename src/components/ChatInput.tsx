@@ -78,7 +78,7 @@ export function ChatInput({
               onClick={onStop}
               variant="destructive"
               size="icon"
-              className="h-[60px] w-[60px] rounded-xl shadow-card [&_svg]:!size-6"
+              className="h-[60px] w-[60px] rounded-xl [&_svg]:!size-6 hover:bg-destructive/90 transition-all duration-200"
             >
               <Square className="w-6 h-6" />
             </Button>
@@ -86,9 +86,11 @@ export function ChatInput({
             <Button
               type="submit"
               disabled={!message.trim() || disabled}
+              variant="outline"
               className={cn(
-                "h-[60px] w-[60px] rounded-xl shadow-card [&_svg]:!size-6",
-                "bg-gradient-primary hover:shadow-glow",
+                "h-[60px] w-[60px] rounded-xl [&_svg]:!size-6",
+                "bg-primary/0 border-primary/50 text-primary",
+                "hover:bg-primary/10 hover:border-primary hover:text-primary",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 "transition-all duration-200"
               )}
@@ -101,17 +103,22 @@ export function ChatInput({
         <div className="flex gap-2 items-center">
           <Select value={selectedModel} onValueChange={onModelChange} disabled={isLoadingModels}>
             <SelectTrigger className={cn(
-              "h-8 w-48 rounded-lg text-sm bg-input/50 border-border/50",
-              "focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+              "h-8 w-48 rounded-lg text-sm border-border/50",
+              "hover:bg-transparent hover:border-foreground hover:text-foreground",
+              "focus:border-foreground focus:ring-1 focus:ring-foreground/20",
+              "transition-all duration-200"
             )}>
-              <SelectValue placeholder="Select model..." />
+              <SelectValue placeholder="Select model..." className="truncate" />
             </SelectTrigger>
-            <SelectContent className="bg-popover border-border/50">
+            <SelectContent className="border-border/50">
               {models.map((model) => (
-                <SelectItem key={model.name} value={model.name} className="text-foreground">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-medium">{model.name}</span>
-                    <span className="text-xs text-muted-foreground ml-4">
+                <SelectItem
+                  key={model.name}
+                  value={model.name}
+                >
+                  <div className="flex items-center justify-between w-full gap-2">
+                    <span className="font-medium truncate">{model.name}</span>
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
                       {formatModelSize(model.size)}
                     </span>
                   </div>
