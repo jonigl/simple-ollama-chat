@@ -2,7 +2,7 @@
 
 This is a simple chat client for Ollama, built with React and TypeScript. It allows you to interact with Ollama models in a user-friendly interface.
 
-![Screenshot](misc/simple-ollama-chat_frame_chrome_mac_dark.png)
+![Screenshot](misc/simple-ollama-chat-screenshot-light.png)
 
 ## How can I edit this code?
 
