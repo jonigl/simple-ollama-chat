@@ -1,19 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
-import { ModelSelector } from "./ModelSelector";
 import { SettingsPanel } from "./SettingsPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, MessageSquare } from "lucide-react";
+import { Trash2, MessageSquare, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatState } from "@/hooks/useChatState";
 import { useSettings } from "@/hooks/useSettings";
+import { useToast } from "@/hooks/use-toast";
+
+interface OllamaModel {
+  name: string;
+  model: string;
+  size: number;
+  digest: string;
+}
 
 export function ChatInterface() {
   const [selectedModel, setSelectedModel] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
+  const [models, setModels] = useState<OllamaModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const { toast } = useToast();
 
   const { thinkingMode, setThinkingMode, streamingMode, setStreamingMode } =
     useSettings();
@@ -31,6 +41,31 @@ export function ChatInterface() {
     thinkingMode,
     streamingMode,
   });
+
+  const fetchModels = async () => {
+    setIsLoadingModels(true);
+    try {
+      const response = await fetch(`${ollamaUrl}/api/tags`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch models: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setModels(data.models || []);
+    } catch (error) {
+      console.error('Error fetching models:', error);
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect to Ollama. Make sure Ollama is running on the specified URL.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchModels();
+  }, [ollamaUrl]);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-bg">
@@ -63,7 +98,7 @@ export function ChatInterface() {
                 htmlFor="ollama-url"
                 className="text-sm text-muted-foreground"
               >
-                Ollama URL:
+                Ollama Server URL:
               </Label>
               <Input
                 id="ollama-url"
@@ -77,9 +112,20 @@ export function ChatInterface() {
               />
             </div>
 
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchModels}
+              disabled={isLoadingModels}
+              className={cn(
+                "border-border/50 bg-input/50 hover:bg-input/70",
+                isLoadingModels && "animate-spin"
+              )}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+
             <SettingsPanel
-              thinkingMode={thinkingMode}
-              onThinkingModeChange={setThinkingMode}
               streamingMode={streamingMode}
               onStreamingModeChange={setStreamingMode}
             />
@@ -95,12 +141,6 @@ export function ChatInterface() {
             </Button>
           </div>
         </div>
-
-        <ModelSelector
-          selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
-          ollamaUrl={ollamaUrl}
-        />
       </div>
 
       {/* Messages */}
@@ -183,6 +223,12 @@ export function ChatInterface() {
         isLoading={isLoading}
         onStop={stopGeneration}
         disabled={!selectedModel}
+        thinkingMode={thinkingMode}
+        onThinkingModeChange={setThinkingMode}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+        models={models}
+        isLoadingModels={isLoadingModels}
       />
     </div>
   );

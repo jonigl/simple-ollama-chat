@@ -1,7 +1,7 @@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Brain, Zap, Sun, Moon, Settings } from "lucide-react";
+import { Zap, Sun, Moon, Settings } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   Popover,
@@ -10,15 +10,11 @@ import {
 } from "@/components/ui/popover";
 
 interface SettingsPanelProps {
-  thinkingMode: boolean;
-  onThinkingModeChange: (enabled: boolean) => void;
   streamingMode: boolean;
   onStreamingModeChange: (enabled: boolean) => void;
 }
 
 export function SettingsPanel({
-  thinkingMode,
-  onThinkingModeChange,
   streamingMode,
   onStreamingModeChange,
 }: SettingsPanelProps) {
@@ -27,8 +23,8 @@ export function SettingsPanel({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="icon"
           className="border-border/50 bg-input/50 hover:bg-accent/50"
         >
@@ -43,7 +39,7 @@ export function SettingsPanel({
               Configure your chat experience
             </p>
           </div>
-          
+
           <div className="space-y-4">
             {/* Theme Toggle */}
             <div className="flex items-center justify-between">
@@ -64,25 +60,7 @@ export function SettingsPanel({
               />
             </div>
 
-            {/* Thinking Mode Toggle */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Brain className="w-4 h-4 text-muted-foreground" />
-                <div className="space-y-0.5">
-                  <Label htmlFor="thinking-toggle" className="text-sm">
-                    Thinking Mode
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Show model's reasoning process
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="thinking-toggle"
-                checked={thinkingMode}
-                onCheckedChange={onThinkingModeChange}
-              />
-            </div>
+
 
             {/* Streaming Mode Toggle */}
             <div className="flex items-center justify-between">
