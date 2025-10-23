@@ -33,4 +33,4 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
-- Lovable was used to streamline the development process of this project.
+- Lovable was used to create the initial project scaffolding.
