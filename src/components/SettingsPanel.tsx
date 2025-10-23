@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Zap, Sun, Moon, Settings, Trash2 } from "lucide-react";
+import { Zap, Sun, Moon, Settings, Trash2, Globe } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   Popover,
@@ -24,12 +24,14 @@ interface SettingsPanelProps {
   streamingMode: boolean;
   onStreamingModeChange: (enabled: boolean) => void;
   onClearHistory?: () => void;
+  onResetOllamaUrl?: () => void;
 }
 
 export function SettingsPanel({
   streamingMode,
   onStreamingModeChange,
   onClearHistory,
+  onResetOllamaUrl,
 }: SettingsPanelProps) {
   const { theme, setTheme } = useTheme();
   const [showClearDialog, setShowClearDialog] = useState(false);
@@ -102,17 +104,30 @@ export function SettingsPanel({
               />
             </div>
 
-            {/* Clear History Button */}
-            {onClearHistory && (
-              <div className="pt-4 border-t border-border/50">
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={() => setShowClearDialog(true)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Clear All Chat History
-                </Button>
+            {/* Action Buttons */}
+            {(onResetOllamaUrl || onClearHistory) && (
+              <div className="pt-4 border-t border-border/50 space-y-2">
+                {onResetOllamaUrl && (
+                    <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={onResetOllamaUrl}
+                    >
+                    <Globe className="w-4 h-4 mr-2" />
+                    Use Default Server URL
+                    </Button>
+                )}
+
+                {onClearHistory && (
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => setShowClearDialog(true)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Clear All Chat History
+                  </Button>
+                )}
               </div>
             )}
           </div>

@@ -28,9 +28,11 @@ interface OllamaModel {
   digest: string;
 }
 
+const DEFAULT_OLLAMA_URL = "http://localhost:11434";
+
 export function ChatInterface() {
   const [selectedModel, setSelectedModel] = useState("");
-  const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
+  const [ollamaUrl, setOllamaUrl] = useState(DEFAULT_OLLAMA_URL);
   const [models, setModels] = useState<OllamaModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -38,6 +40,19 @@ export function ChatInterface() {
     null
   );
   const { toast } = useToast();
+
+  // Load saved model and URL from localStorage on mount
+  useEffect(() => {
+    const savedModel = localStorage.getItem('selectedModel');
+    if (savedModel) {
+      setSelectedModel(savedModel);
+    }
+
+    const savedUrl = localStorage.getItem('ollamaUrl');
+    if (savedUrl) {
+      setOllamaUrl(savedUrl);
+    }
+  }, []);
 
   const { thinkingMode, setThinkingMode, streamingMode, setStreamingMode } =
     useSettings();
@@ -88,7 +103,11 @@ export function ChatInterface() {
         throw new Error(`Failed to fetch models: ${response.statusText}`);
       }
       const data = await response.json();
-      setModels(data.models || []);
+      const fetchedModels = data.models || [];
+      setModels(fetchedModels);
+
+      // Save successful URL to localStorage
+      localStorage.setItem('ollamaUrl', ollamaUrl);
     } catch (error) {
       console.error("Error fetching models:", error);
       toast({
@@ -105,6 +124,27 @@ export function ChatInterface() {
   useEffect(() => {
     fetchModels();
   }, [ollamaUrl]);
+
+  // Validate and set the selected model when models list changes
+  useEffect(() => {
+    if (models.length === 0) return;
+
+    const savedModel = localStorage.getItem('selectedModel');
+
+    // Check if we have a saved model that exists in the current models list
+    if (savedModel && models.some((m) => m.name === savedModel)) {
+      // Saved model is valid, use it (only set if not already set to avoid unnecessary re-renders)
+      if (selectedModel !== savedModel) {
+        setSelectedModel(savedModel);
+      }
+    } else {
+      // Saved model doesn't exist or current selection is invalid
+      // Use first available model
+      const firstModel = models[0].name;
+      setSelectedModel(firstModel);
+      localStorage.setItem('selectedModel', firstModel);
+    }
+  }, [models]);
 
   const handleNewChat = () => {
     const newSession = createNewSession(selectedModel);
@@ -156,6 +196,25 @@ export function ChatInterface() {
       const updated = updatedSessions.find((s) => s.id === sessionId);
       if (updated) setCurrentSession(updated);
     }
+  };
+
+  const handleModelChange = (model: string) => {
+    // Don't save empty model selections
+    if (!model || model.trim() === '') {
+      return;
+    }
+
+    setSelectedModel(model);
+    localStorage.setItem('selectedModel', model);
+  };
+
+  const handleResetOllamaUrl = () => {
+    setOllamaUrl(DEFAULT_OLLAMA_URL);
+    localStorage.setItem('ollamaUrl', DEFAULT_OLLAMA_URL);
+    toast({
+      title: "Server URL Reset",
+      description: "Ollama server URL has been reset to default.",
+    });
   };
 
   return (
@@ -213,6 +272,7 @@ export function ChatInterface() {
               <SettingsPanel
                 streamingMode={streamingMode}
                 onStreamingModeChange={setStreamingMode}
+                onResetOllamaUrl={handleResetOllamaUrl}
                 onClearHistory={() => {
                   clearAllSessions();
                   const newSession = createNewSession(selectedModel);
@@ -297,7 +357,7 @@ export function ChatInterface() {
           thinkingMode={thinkingMode}
           onThinkingModeChange={setThinkingMode}
           selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
+          onModelChange={handleModelChange}
           models={models}
           isLoadingModels={isLoadingModels}
         />
