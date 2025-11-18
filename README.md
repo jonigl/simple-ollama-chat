@@ -1,15 +1,5 @@
 # Simple Ollama Chat
 
-This is a simple chat client for Ollama, built with React and TypeScript. It allows you to interact with Ollama models in a user-friendly interface.
-
-![Screenshot](misc/simple-ollama-chat-main-screenshot-light.png)
-
-And a dark mode:
-![Screenshot Dark](misc/simple-ollama-chat-main-screenshot-dark.png)
-
-
-# Simple Ollama Chat
-
 A lightweight, privacy-focused chat client for Ollama models, built with React and TypeScript. Use it to quickly experiment with different Ollama endpoints and models in a clean, responsive UI.
 
 ![Screenshot Light](misc/simple-ollama-chat-main-screenshot-light.png)
