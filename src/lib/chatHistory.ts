@@ -1,9 +1,16 @@
+export interface MessageImageAttachment {
+  name: string;
+  mimeType: string;
+  dataUrl: string;
+}
+
 export interface Message {
   id: string;
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
   thinking?: string;
+  image?: MessageImageAttachment;
 }
 
 export interface ChatSession {
@@ -18,17 +25,36 @@ export interface ChatSession {
 
 const STORAGE_KEY = 'ollama_chat_sessions';
 
+interface StoredMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+  thinking?: string;
+  image?: MessageImageAttachment;
+}
+
+interface StoredChatSession {
+  id: string;
+  title: string;
+  messages: StoredMessage[];
+  createdAt: string;
+  updatedAt: string;
+  isPinned: boolean;
+  model?: string;
+}
+
 export function getAllSessions(): ChatSession[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
 
-    const sessions = JSON.parse(stored);
-    return sessions.map((session: any) => ({
+    const sessions: StoredChatSession[] = JSON.parse(stored);
+    return sessions.map((session) => ({
       ...session,
       createdAt: new Date(session.createdAt),
       updatedAt: new Date(session.updatedAt),
-      messages: session.messages.map((msg: any) => ({
+      messages: session.messages.map((msg) => ({
         ...msg,
         timestamp: new Date(msg.timestamp),
       })),

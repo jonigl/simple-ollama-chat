@@ -3,17 +3,12 @@ import { Bot, User, Brain } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import type { Message } from "@/lib/chatHistory";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 interface ChatMessageProps {
-  message: {
-    id: string;
-    content: string;
-    role: 'user' | 'assistant';
-    timestamp: Date;
-    thinking?: string;
-  };
+  message: Message;
   isThinkingActive?: boolean;
 }
 
@@ -36,7 +31,7 @@ export function ChatMessage({ message, isThinkingActive = false }: ChatMessagePr
       const timer = setTimeout(() => setShowThinking(false), 1000);
       return () => clearTimeout(timer);
     }
-  }, [isThinkingActive]);
+  }, [hasThinking, isThinkingActive, showThinking]);
 
   return (
     <div
@@ -102,6 +97,19 @@ export function ChatMessage({ message, isThinkingActive = false }: ChatMessagePr
               : "bg-gradient-ai text-ai-message-foreground"
           )}
         >
+          {message.image && (
+            <div className="mb-3 overflow-hidden rounded-md border border-border/40 bg-background/30">
+              <img
+                src={message.image.dataUrl}
+                alt={message.image.name}
+                className="max-h-64 w-full object-cover"
+              />
+              <div className="border-t border-border/40 px-3 py-2 text-xs opacity-80">
+                {message.image.name}
+              </div>
+            </div>
+          )}
+
           {isUser ? (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
           ) : (

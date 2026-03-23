@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { SettingsPanel } from "./SettingsPanel";
@@ -6,7 +6,7 @@ import { ChatHistoryNav } from "./ChatHistoryNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, MessageSquare, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatState } from "@/hooks/useChatState";
 import { useSettings } from "@/hooks/useSettings";
@@ -28,6 +28,10 @@ interface OllamaModel {
   digest: string;
 }
 
+interface OllamaShowResponse {
+  capabilities?: string[];
+}
+
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 
 export function ChatInterface() {
@@ -35,6 +39,7 @@ export function ChatInterface() {
   const [ollamaUrl, setOllamaUrl] = useState(DEFAULT_OLLAMA_URL);
   const [models, setModels] = useState<OllamaModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [visionCapabilities, setVisionCapabilities] = useState<Record<string, boolean>>({});
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(
     null
@@ -60,24 +65,25 @@ export function ChatInterface() {
   // Load sessions on mount
   useEffect(() => {
     const loadedSessions = getAllSessions();
+    const storedModel = localStorage.getItem("selectedModel") ?? undefined;
     setSessions(loadedSessions);
 
     // Create or select a session
     if (loadedSessions.length > 0) {
       setCurrentSession(loadedSessions[0]);
     } else {
-      const newSession = createNewSession(selectedModel);
+      const newSession = createNewSession(storedModel);
       setCurrentSession(newSession);
       setSessions([newSession]);
     }
   }, []);
 
-  const handleSessionUpdate = (updatedSession: ChatSession) => {
+  const handleSessionUpdate = useCallback((updatedSession: ChatSession) => {
     setSessions((prev) =>
       prev.map((s) => (s.id === updatedSession.id ? updatedSession : s))
     );
     setCurrentSession(updatedSession);
-  };
+  }, []);
 
   const {
     messages,
@@ -95,7 +101,7 @@ export function ChatInterface() {
     onSessionUpdate: handleSessionUpdate,
   });
 
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
     setIsLoadingModels(true);
     try {
       const response = await fetch(`${ollamaUrl}/api/tags`);
@@ -105,6 +111,7 @@ export function ChatInterface() {
       const data = await response.json();
       const fetchedModels = data.models || [];
       setModels(fetchedModels);
+      setVisionCapabilities({});
 
       // Save successful URL to localStorage
       localStorage.setItem('ollamaUrl', ollamaUrl);
@@ -119,11 +126,11 @@ export function ChatInterface() {
     } finally {
       setIsLoadingModels(false);
     }
-  };
+  }, [ollamaUrl, toast]);
 
   useEffect(() => {
     fetchModels();
-  }, [ollamaUrl]);
+  }, [fetchModels]);
 
   // Validate and set the selected model when models list changes
   useEffect(() => {
@@ -134,17 +141,74 @@ export function ChatInterface() {
     // Check if we have a saved model that exists in the current models list
     if (savedModel && models.some((m) => m.name === savedModel)) {
       // Saved model is valid, use it (only set if not already set to avoid unnecessary re-renders)
-      if (selectedModel !== savedModel) {
-        setSelectedModel(savedModel);
-      }
+      setSelectedModel((prev) => (prev === savedModel ? prev : savedModel));
     } else {
       // Saved model doesn't exist or current selection is invalid
       // Use first available model
       const firstModel = models[0].name;
-      setSelectedModel(firstModel);
+      setSelectedModel((prev) => (prev === firstModel ? prev : firstModel));
       localStorage.setItem('selectedModel', firstModel);
     }
   }, [models]);
+
+  const selectedModelVisionCapability = selectedModel
+    ? visionCapabilities[selectedModel]
+    : undefined;
+
+  useEffect(() => {
+    if (!selectedModel) return;
+
+    if (selectedModelVisionCapability !== undefined) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchVisionCapability = async () => {
+      try {
+        const response = await fetch(`${ollamaUrl}/api/show`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ model: selectedModel }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to inspect model: ${response.statusText}`);
+        }
+
+        const data: OllamaShowResponse = await response.json();
+        const hasVisionCapability = data.capabilities?.includes("vision") ?? false;
+
+        if (!isCancelled) {
+          setVisionCapabilities((prev) => ({
+            ...prev,
+            [selectedModel]: hasVisionCapability,
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching model capabilities:", error);
+
+        if (!isCancelled) {
+          setVisionCapabilities((prev) => ({
+            ...prev,
+            [selectedModel]: false,
+          }));
+        }
+      }
+    };
+
+    fetchVisionCapability();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [ollamaUrl, selectedModel, selectedModelVisionCapability]);
+
+  const selectedModelHasVision = selectedModel
+    ? visionCapabilities[selectedModel] ?? false
+    : false;
 
   const handleNewChat = () => {
     const newSession = createNewSession(selectedModel);
@@ -360,6 +424,7 @@ export function ChatInterface() {
           onModelChange={handleModelChange}
           models={models}
           isLoadingModels={isLoadingModels}
+          canAttachImages={selectedModelHasVision}
         />
       </div>
     </div>
