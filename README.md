@@ -10,6 +10,7 @@ A lightweight, privacy-focused chat client for Ollama models, built with React a
 - 💬 Chat with Ollama models using a clean, intuitive interface.
 - 🔌 Connect to any Ollama API endpoint.
 - 🔁 Switch models on the fly.
+- 🖼️ Attach images when the selected Ollama model supports vision inputs.
 - 🧠 Toggle "thinking" mode for models that support it.
 - ⚡ Streaming responses for a more dynamic, real-time experience.
 - 🌗 Light and dark theme support.
@@ -40,6 +41,7 @@ Open `http://localhost:5173` (or the URL shown by Vite) in your browser.
 ## Usage
 
 - Select an Ollama model from the UI or enter a custom API endpoint.
+- Vision-capable models expose an `Attach image` action next to the model selector and can send one image alongside the current prompt.
 - Send messages and receive streaming responses when supported by the model.
 - Switch themes or toggle thinking mode via the settings panel.
 

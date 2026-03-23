@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import type { Message, ChatSession } from "@/lib/chatHistory";
+import type {
+  Message,
+  ChatSession,
+  MessageImageAttachment,
+} from "@/lib/chatHistory";
 import {
   saveSession,
   generateSessionTitle,
@@ -14,6 +18,21 @@ interface UseChatStateProps {
   currentSession: ChatSession | null;
   onSessionUpdate: (session: ChatSession) => void;
 }
+
+interface OllamaChatMessage {
+  role: Message["role"];
+  content: string;
+  images?: string[];
+}
+
+const getOllamaImagePayload = (
+  image?: MessageImageAttachment
+): string[] | undefined => {
+  if (!image?.dataUrl) return undefined;
+
+  const [, base64Data = image.dataUrl] = image.dataUrl.split(",", 2);
+  return [base64Data];
+};
 
 export function useChatState({
   ollamaUrl,
@@ -42,7 +61,7 @@ export function useChatState({
     setTimeout(() => {
       isLoadingSession.current = false;
     }, 0);
-  }, [currentSession?.id]);
+  }, [currentSession]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,7 +95,7 @@ export function useChatState({
       saveSession(updatedSession);
       onSessionUpdate(updatedSession);
     }
-  }, [messages, currentSession, selectedModel]);
+  }, [messages, currentSession, onSessionUpdate, selectedModel]);
 
   const clearChat = () => {
     setMessages([]);
@@ -99,7 +118,10 @@ export function useChatState({
     }
   };
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (
+    content: string,
+    image?: MessageImageAttachment
+  ) => {
     if (!selectedModel) {
       toast({
         title: "No Model Selected",
@@ -114,7 +136,18 @@ export function useChatState({
       content,
       role: 'user',
       timestamp: new Date(),
+      ...(image && { image }),
     };
+
+    const payloadMessages: OllamaChatMessage[] = [...messages, userMessage].map(
+      (msg) => ({
+        role: msg.role,
+        content: msg.content,
+        ...(msg.role === 'user' && msg.image
+          ? { images: getOllamaImagePayload(msg.image) }
+          : {}),
+      })
+    );
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
@@ -130,10 +163,7 @@ export function useChatState({
         },
         body: JSON.stringify({
           model: selectedModel,
-          messages: [...messages, userMessage].map(msg => ({
-            role: msg.role,
-            content: msg.content,
-          })),
+          messages: payloadMessages,
           stream: streamingMode,
           think: thinkingMode,
         }),
@@ -214,8 +244,8 @@ export function useChatState({
 
         setMessages(prev => [...prev, assistantMessage]);
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.log('Request was aborted');
       } else {
         console.error('Error sending message:', error);
